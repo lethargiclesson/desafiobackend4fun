@@ -2,6 +2,8 @@
 
 namespace App\Console;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -12,9 +14,7 @@ class Kernel extends ConsoleKernel
      *
      * @var array
      */
-    protected $commands = [
-        //
-    ];
+    protected $commands = [];
 
     /**
      * Define the application's command schedule.
@@ -24,7 +24,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->call(function () {
+            $jobs = DB::table('failed_jobs')->where('failed_at', '<=', now())->get();
+
+            foreach ($jobs as $job) {
+                Artisan::call('queue:retry all');
+            }
+        })->everyMinute();
     }
 
     /**
@@ -34,7 +40,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
