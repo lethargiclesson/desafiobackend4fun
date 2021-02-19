@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Transactions;
 use App\Models\User;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Events\PaymentApproved;
 use Illuminate\Validation\Rule;
+use Faker\Provider\ar_SA\Payment;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Notification;
 
 class TransactionController extends Controller
 {
@@ -26,6 +30,7 @@ class TransactionController extends Controller
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
+
         try {
             $user = User::where('id', $request->payer)->where('tipo', 'usuario')->first();
             $seller = User::where('id', $request->payee)->where('tipo', 'lojista')->first();
@@ -45,10 +50,12 @@ class TransactionController extends Controller
             $user->balance()->update(['balance' => $newBalance]);
             $transacao->save();
 
-
-            $validate = json_decode($this->validateTransaction())->message;
-
-            if ($validate !== 'Autorizado') {
+            /**
+             * 
+             * Call para api de validação de pagamento
+             * 
+             */
+            if ($this->validateTransaction() !== 'Autorizado') {
                 $user->balance()->update(['balance' => $oldBalance]);
                 $transacao->status = 'cancelado';
                 $transacao->save();
@@ -61,6 +68,13 @@ class TransactionController extends Controller
             $sellerNewBalance = $seller->balance()->first()->balance + $request->value;
             $seller->balance()->update(['balance' => $sellerNewBalance]);
 
+            /**
+             * 
+             * Evento para envio de notificação de pagamentro aprovado
+             * 
+             */
+            PaymentApproved::dispatch($user, $seller);
+
             return response()->json(['success' => 'Transação realizada com sucesso!'], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode());
@@ -69,22 +83,7 @@ class TransactionController extends Controller
 
     private function validateTransaction()
     {
-        $curl = curl_init();
-        
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://run.mocky.io/v3/8fafdd68-a090-496f-8c9a-3442cf30dae6',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-        ));
-
-        $response = curl_exec($curl);
-
-        curl_close($curl);
-        return $response;
+        $response = Http::get('https://run.mocky.io/v3/8fafdd68-a090-496f-8c9a-3442cf30dae6');
+        return json_decode($response->body())->message;
     }
 }
