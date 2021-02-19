@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
+/**
+ * endpoint testing
+ * 
+ */
 class RegisterTest extends TestCase
 {
     use RefreshDatabase, WithFaker;

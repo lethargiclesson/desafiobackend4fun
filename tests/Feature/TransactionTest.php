@@ -10,7 +10,12 @@ use Illuminate\Support\Str;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
-
+/**
+ * 
+ * 
+ * endpoint testing
+ * 
+ */
 class TransactionTest extends TestCase
 {
     use RefreshDatabase, WithFaker, WithoutMiddleware;
