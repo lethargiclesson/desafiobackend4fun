@@ -20,84 +20,108 @@ class TransactionTest extends TestCase
      *
      * @return void
      */
-    // public function test_transaction()
-    // {
-    //     $user = User::factory()->count(10)->create()->each(function ($u) {
-    //         $u->balance()->save(Balance::factory()->make());
-    //     });
+    public function test_transaction()
+    {
+        $payer = User::factory(4)->create([
+            'tipo' => 'usuario',
+            'cnpj' => NULL,
+        ]);
 
-    //     $user = $this->faker->randomElement(User::where('tipo', 'usuario')->pluck('id')->toArray());
-    //     $userBalance = User::find($user)->first()->balance()->first()->balance;
+        $userBalance = Balance::factory()->create([
+            'user_id' => $this->faker->randomElement($payer->pluck('id')->toArray()),
+            'balance' => $this->faker->randomNumber(4),
+        ]);
 
-    //     $sellers =  User::where('tipo', 'lojista')->pluck('id')->toArray();
-    //     $value = $this->faker->randomNumber(3);
-    //     $this->withoutExceptionHandling();
+        $payee = User::factory()->create([
+            'tipo' => 'lojista',
+            'cnpj' => intval($this->faker->unique(true, 3)->randomNumber(7) . $this->faker->unique(true, 4)->randomNumber(7)),
+        ]);
 
-    //     if ($userBalance >= $value) {
-    //         $response = $this->postJson('api/transfer', [
-    //             'payer' => $user,
-    //             'payee' => $this->faker->randomElement($sellers),
-    //             'value' => $value,
-    //         ])->assertStatus(200)->assertExactJson(['success' => 'Transação realizada com sucesso!']);
-    //     }
-    // }
+        $sellerBalance = Balance::factory()->create([
+            'user_id' => $payee->id,
+            'balance' => $this->faker->randomNumber(4),
+        ]);
 
-    // public function test_transaction_validation_payer()
-    // {
-    //     $user = User::factory()->count(3)->hasBalance(1, ['balance' => $this->faker->randomNumber(3)])->create();
+        $value = $this->faker->randomNumber(3);
 
+        $response = $this->postJson('api/transfer', [
+            'payer' => $userBalance->user_id,
+            'payee' => $payee->id,
+            'value' => $value,
+        ])->assertStatus(200)->assertExactJson(['success' => 'Transação realizada com sucesso!']);
+    }
 
-    //     $userID = $this->faker->randomElement(User::where('tipo', 'usuario')->pluck('id')->toArray());
-    //     $userBalance = User::find($userID)->first()->balance()->first()->balance;
+    public function test_transaction_validation_payer()
+    {
+        $payer = User::factory(4)->create([
+            'tipo' => 'usuario',
+            'cnpj' => NULL,
+        ]);
 
-    //     $sellers =  User::where('tipo', 'lojista')->pluck('id')->toArray();
-    //     $value = $this->faker->randomNumber(3);
+        $payee = User::factory()->create([
+            'tipo' => 'lojista',
+            'cnpj' => intval($this->faker->unique(true, 3)->randomNumber(7) . $this->faker->unique(true, 4)->randomNumber(7)),
+        ]);
 
-    //     if ($userBalance >= $value) {
-    //         $response = $this->postJson('api/transfer', [
-    //             'payee' => $this->faker->randomElement($sellers),
-    //             'value' => $value,
-    //         ])->assertStatus(400)->assertExactJson(['error' => ['payer' => ['The payer field is required.']]]);
-    //     }
-    // }
+        $balance = Balance::factory()->create(['user_id' => $this->faker->randomElement($payer->pluck('id')->toArray())]);
 
-    // public function test_transaction_validation_payee()
-    // {
-    //     $user = User::factory()->count(3)->hasBalance(1, ['balance' => $this->faker->randomNumber(3)])->create();
+        $value = $this->faker->randomNumber(2);
 
+        if ($balance->balance >= $value) {
+            $response = $this->postJson('api/transfer', [
+                'payee' => $payee->id,
+                'value' => $value,
+            ])->assertStatus(400)->assertExactJson(['error' => ['payer' => ['The payer field is required.']]]);
+        }
+    }
 
-    //     $userID = $this->faker->randomElement(User::where('tipo', 'usuario')->pluck('id')->toArray());
-    //     $userBalance = User::find($userID)->first()->balance()->first()->balance;
+    public function test_transaction_validation_payee()
+    {
+        $payer = User::factory(4)->create([
+            'tipo' => 'usuario',
+            'cnpj' => NULL,
+        ]);
 
-    //     $sellers =  User::where('tipo', 'lojista')->pluck('id')->toArray();
-    //     $value = $this->faker->randomNumber(3);
+        $payee = User::factory()->create([
+            'tipo' => 'lojista',
+            'cnpj' => intval($this->faker->unique(true, 3)->randomNumber(7) . $this->faker->unique(true, 4)->randomNumber(7)),
+        ]);
 
-    //     if ($userBalance >= $value) {
-    //         $response = $this->postJson('api/transfer', [
-    //             'payer' => $user,
-    //             'value' => $value,
-    //         ])->assertStatus(400)->assertExactJson(['error' => ['payee' => ['The payee field is required.']]]);
-    //     }
-    // }
+        $balance = Balance::factory()->create(['user_id' => $this->faker->randomElement($payer->pluck('id')->toArray())]);
 
-    // public function test_transaction_validation_value()
-    // {
-    //     $user = User::factory()->count(3)->hasBalance(1, ['balance' => $this->faker->randomNumber(3)])->create();
+        $value = $this->faker->randomNumber(2);
 
+        if ($balance->balance >= $value) {
+            $response = $this->postJson('api/transfer', [
+                'payer' => $balance->user_id,
+                'value' => $value,
+            ])->assertStatus(400)->assertExactJson(['error' => ['payee' => ['The payee field is required.']]]);
+        }
+    }
 
-    //     $userID = $this->faker->randomElement(User::where('tipo', 'usuario')->pluck('id')->toArray());
-    //     $userBalance = User::find($userID)->first()->balance()->first()->balance;
+    public function test_transaction_validation_value()
+    {
+        $payer = User::factory(4)->create([
+            'tipo' => 'usuario',
+            'cnpj' => NULL,
+        ]);
 
-    //     $sellers =  User::where('tipo', 'lojista')->pluck('id')->toArray();
-    //     $value = $this->faker->randomNumber(3);
+        $payee = User::factory()->create([
+            'tipo' => 'lojista',
+            'cnpj' => intval($this->faker->unique(true, 3)->randomNumber(7) . $this->faker->unique(true, 4)->randomNumber(7)),
+        ]);
 
-    //     if ($userBalance >= $value) {
-    //         $response = $this->postJson('api/transfer', [
-    //             'payer' => $user,
-    //             'payee' => $this->faker->randomElement($sellers),
-    //         ])->assertStatus(400)->assertExactJson(['error' => ['value' => ['The value field is required.']]]);
-    //     }
-    // }
+        $balance = Balance::factory()->create(['user_id' => $this->faker->randomElement($payer->pluck('id')->toArray())]);
+
+        $value = $this->faker->randomNumber(2);
+
+        if ($balance->balance >= $value) {
+            $response = $this->postJson('api/transfer', [
+                'payer' => $balance->user_id,
+                'payee' => $payee->id,
+            ])->assertStatus(400)->assertExactJson(['error' => ['value' => ['The value field is required.']]]);
+        }
+    }
 
     // public function test_transaction_negative_balance()
     // {
